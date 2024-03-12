@@ -1,0 +1,66 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                             Trailing Stop Prime |
+//|                                                   forexroboteasy.com |
+//|                                                      Forex Robot Easy Team |
+//+------------------------------------------------------------------+
+
+// Define trailing stop distance (in pips)
+input int TrailingStopDistance = 20;
+
+// Define variables
+double initialStopPrice;
+double currentStopPrice;
+double currentMarketPrice;
+
+// Initialize the trailing stop
+void OnInit()
+{
+    // Get the initial stop price
+    initialStopPrice = NormalizeDouble(Bid - TrailingStopDistance * Point, Digits);
+}
+
+// Update the trailing stop
+void OnTick()
+{
+    // Get the current market price
+    currentMarketPrice = NormalizeDouble(Bid, Digits);
+
+    // If the market price increases, trail the stop price
+    if (currentMarketPrice > currentStopPrice)
+    {
+        currentStopPrice = NormalizeDouble(currentMarketPrice - TrailingStopDistance * Point, Digits);
+    }
+    // If the market price decreases, keep the stop price unchanged
+    else if (currentMarketPrice < currentStopPrice)
+    {
+        currentStopPrice = NormalizeDouble(currentStopPrice, Digits);
+    }
+}
+
+// Execute the stop loss order if necessary
+void OnTrade()
+{
+    // Get the current stop level
+    double currentStopLevel = OrderStopLevel();
+
+    // If the current stop level is different from the current stop price, modify the order
+    if (currentStopLevel != currentStopPrice)
+    {
+        // Calculate the stop loss price in case it needs to be modified
+        double stopLossPrice = 0;
+        if (currentStopPrice > currentMarketPrice)
+        {
+            stopLossPrice = NormalizeDouble(currentStopPrice - TrailingStopDistance * Point, Digits);
+        }
+        else if (currentStopPrice < currentMarketPrice)
+        {
+            stopLossPrice = NormalizeDouble(currentMarketPrice - TrailingStopDistance * Point, Digits);
+        }
+
+        // Modify the stop loss order
+        OrderModify(OrderTicket(), OrderOpenPrice(), stopLossPrice, OrderTakeProfit(), 0, clrNONE);
+    }
+}
+
+//+------------------------------------------------------------------+
